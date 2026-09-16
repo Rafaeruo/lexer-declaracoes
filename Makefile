@@ -7,7 +7,7 @@
 
 FLEX  := flex
 CXX   := g++
-SRC   := lexer.l
+SRC   := clarker.l
 BIN   := bin
 TESTS := test-programs
 

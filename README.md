@@ -27,7 +27,7 @@ O analisador le da entrada padrao. Ele tambem pode ser executado diretamente ass
 
 ## Estrutura
 
-    lexer.l           lexer
+    clarker.l         lexer
     Makefile          comandos de build e execucao
     test-programs/    programas de teste (.larp)
     colab.ipynb       notebook para executar no Google Colab
