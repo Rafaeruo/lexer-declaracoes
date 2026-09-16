@@ -1,0 +1,7 @@
+int
+	primeiro ,
+	segundo ;
+
+		float    x	,y;
+
+char ultimo;

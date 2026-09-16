@@ -34,13 +34,13 @@ $(EXE): $(GEN)
 	$(CXX) $(GEN) -o $(EXE)
 
 run: $(EXE)
-	@./$(EXE) < $(FILE)
+	@./$(EXE) < $(FILE) || true
 	@echo
 
 test: $(EXE)
 	@for f in $(TESTS)/*.larp; do \
 		echo "=== $$f ==="; \
-		./$(EXE) < "$$f"; \
+		./$(EXE) < "$$f" || true; \
 		echo; echo; \
 	done
 

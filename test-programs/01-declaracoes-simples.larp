@@ -1,0 +1,4 @@
+int a;
+float x, y, z;
+char nome;
+int _contador, total2;

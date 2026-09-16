@@ -1,0 +1,6 @@
+int _;
+float __x, x_2, total2;
+char c1, C1;
+int contadorDeElementosDaListaPrincipal;
+int a;
+float a;
