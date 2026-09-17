@@ -1,3 +1,14 @@
+/* Gramática (EBNF):
+programa   = { declaracao } ; 
+declaracao = TIPO lista_ids ";" ; 
+lista_ids  = ID { "," ID } ; 
+TIPO       = "char" | "int" | "float" ; 
+ID     = identificador - TIPO 
+Identificador = letra { letra | digito } ; 
+letra  = "a" | "b" | ... | "z" | "A" | "B" | ... | "Z" | "_" ; 
+digito = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+*/
+
 %option noyywrap yylineno
 
 %{
@@ -18,7 +29,7 @@ typedef struct {
 static std::vector<Simbolo> tabela_de_simbolos;
 static int total_de_tokens = 0;
 static int total_de_erros  = 0;
-static std::string ultimo_tipo_visto; // usado para inserir o tipo de cada simbolo na tabela de simbolos (fica errado quando as declaracoes nao estao semanticamente corretas)
+static std::string ultimo_tipo_visto; // usado para inserir o tipo de cada simbolo na tabela de simbolos (fica errado quando as declaracoes nao estao sintaticamente corretas)
 
 // Adiciona a ocorrencia de um simbolo na tabela de simbolos
 static void registrar_simbolo(const std::string &nome, const std::string &tipo, int linha)
@@ -90,7 +101,8 @@ static void imprimir_tabela_de_simbolos(void)
 
 ";" {
     total_de_tokens++;
-    ultimo_tipo_visto.clear(); // praticamente uma regra semantica, mas é util pra deixar a tabela de simbolos mais legivel
+    ultimo_tipo_visto.clear(); // o lexer guarda aqui um estado que seria do parser, so para
+                               // conseguir preencher o tipo na tabela e deixar mais legivel
     printf("PONTOVIRG ");
 }
 
@@ -100,12 +112,12 @@ static void imprimir_tabela_de_simbolos(void)
     putchar('\n');
 }
 
-    /* Os demais brancos sao descartados tambem, mas sem printar. 
-    O \r acompanha o \n em arquivos * gravados no Windows (CRLF) */
+    /* Os demais brancos sao descartados tambem, mas sem printar.
+    O \r acompanha o \n em arquivos gravados no Windows (CRLF) */
 [ \t\r]+ ;
 
-    /* Ultimo: Qualquer outro caractere nao pertence a nenhum token previsto. O erro e
-     * reportado por caractere sem tentar adivinhar o que deveria seguir (semantica). */
+    /* Ultimo: qualquer outro caractere nao pertence a nenhum token previsto. O erro e
+     * reportado por caractere, sem tentar adivinhar o que deveria seguir (sintaxe) */
 . {
     total_de_erros++;
     printf("NAO RECONHECIDO(%s) na linha %d ", yytext, yylineno);
