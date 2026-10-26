@@ -1,13 +1,59 @@
 /* Gramática (EBNF):
-programa   = { declaracao } ; 
-declaracao = TIPO lista_ids ";" ; 
+programa   = { instrucao } ; 
+instrucao = declaracao | atribuicao |  if  | route | fall ;
+
+declaracao = TIPO lista_ids [ "=" lista_expressoes ] ";" ; 
 lista_ids  = ID { "," ID } ; 
-TIPO       = "char" | "int" | "float" ; 
-ID     = identificador - TIPO 
-Identificador = letra { letra | digito } ; 
+lista_expressoes = valor { "," valor } ;
+valor = expressao | ternario ;
+
+if = "if" "("  expressao_de_condicao ")" bloco [ else ] ;
+else = "else" bloco ;
+bloco = "{" { instrucao } "}" ;
+ternario = "if" "(" expressao_de_condicao ")" seta instrucoes_ternario "else" seta instrucoes_ternario ;
+instrucoes_ternario = { declaracao | atribuicao } (expressao | ternario) ;
+seta = "->" ;
+
+route = "route" expressao "to" cases ;
+cases = "{" { case } "}" [ else ] ;
+case = (literal | ID) ":" bloco ;
+fall = "fall" ";" ;
+
+atribuicao = ID "=" valor ";" ;
+
+expressao_de_condicao = expressao operador_relacional expressao ;
+operador_relacional = "<" | "<=" | ">" | ">=" | "==" | "!=" ;
+
+expressao = termo { ( "+" | "-" ) termo } ;
+termo = fator { ( "*" | "/" ) fator } ; 
+fator = literal | ID | "(" expressao ")" ;
+
+literal = LITERAL_INT | LITERAL_FLOAT | LITERAL_STRING ;
+LITERAL_INT = digito { digito } ;
+LITERAL_STRING = '"'{ escape_string | caractere_string }'"' ;
+caractere_string = ? qualquer caractere ASCII (dentre os imprimíveis) ? - ( '"' | "\" ) ;
+escape_string = "\" ( '"' | "\" | "n" | "t" ) ;
+LITERAL_FLOAT = digito { digito } "." digito { digito } ;
+
+TIPO = "string" | "int" | "float" ; 
+ID = identificador - keywords ;
+identificador = letra { letra | digito } ; 
 letra  = "a" | "b" | ... | "z" | "A" | "B" | ... | "Z" | "_" ; 
 digito = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+keywords = TIPO | "if" | "else" | "route" | "to" | "fall" ;
+
+// nao possui: operadores logicos (and, or), expressoes de condicao sao "unicas"
+// nao possui: concatenacao de string. operador + so serve pra soma
+// expressoes, que sao apenas aritmeticas nesse momento, ainda assim permitem strings como termo/fator -> isso precisa ser checado na semantica (poderia ser explicito aqui, mas igual tem que checar na semantica)
+// fall pode estar em qualquer lugar sintaticamente, mas temos que checar semanticamente que vai estar so dentro de cases do route. fazer assim ajuda pra poder botar o fall nested em outras coisas dentro do case (mas sepa a gente n precisa disso?)
+// pros cases, melhor nao deixar floats? e deixar so valores sem IDS? 
+// pros cases, no enunciado ta ambiguo se é obrigatorio mais de um valor por case. VER
+// cosnegui fazer os ternarios serem aninhados. isso ta explicito no ramo final do ternario e implicito nos outros pela atribuicao e declaracao que aceitam outros ternarios 
+// ternarios so podem em atribuicoes e declaracoes, nao dentro de expressoes. Acho q de boa pra simplificar 
+// declaracao com atribuicao direto com variso valores sepa nao precisa, enunciado n pede. daria pra remover pra simplificar
 */
+
+// Terminais que terão que ser definidos pelo lexer: TIPO, ID, LITERAL_INT, LITERAL_FLOAT, LITERAL_STRING, “if”, “else”, “route”, “to”, “fall”, “=”, “;”, “,”, “:”, SETA, “(”, “)”, “{”, “}”, “+”, “-”, “*”, “/”, “<”, “<=”, “>”, “>=”, “==”, “!=”
 
 %option noyywrap yylineno
 
