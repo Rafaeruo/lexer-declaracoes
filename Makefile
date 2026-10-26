@@ -1,13 +1,17 @@
-# Lexer de declaracoes -- build e execucao
+# Lexer e parser -- build e execucao
 #
-#   make            compila o lexer em bin/
-#   make run FILE=x roda o lexer no arquivo x
-#   make test       roda o lexer em todos os test-programs/*.larp
-#   make clean      remove o diretorio bin/
+#   make                    compila bin/lexer e bin/parser
+#   make run FILE=x         roda o parser (lexer + parser) no arquivo x
+#   make run-lexer FILE=x   roda so o lexer no arquivo x
+#   make test               roda o parser em todos os test-programs/*.larp
+#   make test-lexer         roda so o lexer em todos os test-programs/*.larp
+#   make clean              remove o diretorio bin/
 
 FLEX  := flex
+BISON := bison
 CXX   := g++
-SRC   := clarker.l
+LEX_SRC    := clarker.l
+PARSER_SRC := parser.y
 BIN   := bin
 TESTS := test-programs
 
@@ -15,36 +19,61 @@ TESTS := test-programs
 # encontra o arquivo que acabou de criar e recompila a cada invocacao.
 UNAME := $(shell uname -s)
 ifneq (,$(filter MINGW% MSYS% CYGWIN%,$(UNAME)))
-  EXE := $(BIN)/lexer.exe
+  EXT := .exe
 else
-  EXE := $(BIN)/lexer
+  EXT :=
 endif
 
-GEN := $(BIN)/lex.yy.c
+LEXER  := $(BIN)/lexer$(EXT)
+PARSER := $(BIN)/parser$(EXT)
 
-all: $(EXE)
+LEX_GEN    := $(BIN)/lex.yy.c
+PARSER_GEN := $(BIN)/parser.tab.c
+PARSER_H   := $(BIN)/parser.tab.h
+
+all: $(LEXER) $(PARSER)
 
 $(BIN):
 	mkdir -p $(BIN)
 
-$(GEN): $(SRC) | $(BIN)
-	$(FLEX) -o $(GEN) $(SRC)
+# O Bison gera o parser (.c) e o header com os codigos dos tokens (.h), que o lexer inclui
+$(PARSER_GEN): $(PARSER_SRC) | $(BIN)
+	$(BISON) -d -o $(PARSER_GEN) $(PARSER_SRC)
 
-$(EXE): $(GEN)
-	$(CXX) $(GEN) -o $(EXE)
+$(PARSER_H): $(PARSER_GEN)
 
-run: $(EXE)
-	@./$(EXE) < $(FILE) || true
+$(LEX_GEN): $(LEX_SRC) | $(BIN)
+	$(FLEX) -o $(LEX_GEN) $(LEX_SRC)
+
+# O lexer sozinho usa o main() do clarker.l; so precisa do header do Bison, nao do parser
+$(LEXER): $(LEX_GEN) $(PARSER_H)
+	$(CXX) -DSOMENTE_LEXER $(LEX_GEN) -o $(LEXER)
+
+$(PARSER): $(LEX_GEN) $(PARSER_GEN) $(PARSER_H)
+	$(CXX) $(PARSER_GEN) $(LEX_GEN) -o $(PARSER)
+
+run: $(PARSER)
+	@./$(PARSER) < $(FILE) || true
+
+run-lexer: $(LEXER)
+	@./$(LEXER) < $(FILE) || true
 	@echo
 
-test: $(EXE)
+test: $(PARSER)
 	@for f in $(TESTS)/*.larp; do \
 		echo "=== $$f ==="; \
-		./$(EXE) < "$$f" || true; \
+		./$(PARSER) < "$$f" || true; \
+		echo; \
+	done
+
+test-lexer: $(LEXER)
+	@for f in $(TESTS)/*.larp; do \
+		echo "=== $$f ==="; \
+		./$(LEXER) < "$$f" || true; \
 		echo; echo; \
 	done
 
 clean:
 	rm -rf $(BIN)
 
-.PHONY: all run test clean
+.PHONY: all run run-lexer test test-lexer clean
