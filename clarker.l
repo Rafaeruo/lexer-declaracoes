@@ -53,9 +53,13 @@ keywords = TIPO | "if" | "else" | "route" | "to" | "fall" ;
 // declaracao com atribuicao direto com variso valores sepa nao precisa, enunciado n pede. daria pra remover pra simplificar
 */
 
-// Terminais que terão que ser definidos pelo lexer: TIPO, ID, LITERAL_INT, LITERAL_FLOAT, LITERAL_STRING, “if”, “else”, “route”, “to”, “fall”, “=”, “;”, “,”, “:”, SETA, “(”, “)”, “{”, “}”, “+”, “-”, “*”, “/”, “<”, “<=”, “>”, “>=”, “==”, “!=”
-
 %option noyywrap yylineno
+
+/* Definicoes com os mesmos nomes da gramatica, usadas no literal string.
+ * caractere_string: ASCII imprimivel (espaco ate ~), exceto aspas (0x22) e barra invertida (0x5C),
+ * por isso as duas faixas: de "#" ate "[" e de "]" ate "~" */
+caractere_string  [ !#-\[\]-~]
+escape_string     \\["\\nt]
 
 %{
 #include <stdio.h>
@@ -110,10 +114,10 @@ static void imprimir_tabela_de_simbolos(void)
         return;
     }
 
-    printf("%4s  %-25s  %-5s  %13s  %11s\n",
+    printf("%4s  %-25s  %-6s  %13s  %11s\n",
            "#", "IDENTIFICADOR", "TIPO", "1a OCORRENCIA", "OCORRENCIAS");
     for (i = 0; i < tabela_de_simbolos.size(); i++) {
-        printf("%4d  %-25s  %-5s  %13d  %11d\n",
+        printf("%4d  %-25s  %-6s  %13d  %11d\n",
                (int) (i + 1),
                tabela_de_simbolos[i].nome.c_str(),
                tabela_de_simbolos[i].tipo.c_str(),
@@ -126,10 +130,38 @@ static void imprimir_tabela_de_simbolos(void)
 %%
 
     /* Primeiro palavras reservadas de tipos (para nao serem consideradas como identificadores) */
-"char"|"int"|"float" {
+"string"|"int"|"float" {
     total_de_tokens++;
     ultimo_tipo_visto = yytext;
     printf("TIPO(%s) ", yytext);
+}
+
+    /* Depois as demais palavras reservadas, tambem antes dos identificadores. Quando o casamento
+     * tem o mesmo tamanho (ex.: "if"), vence a regra que aparece primeiro; quando o identificador
+     * e mais longo (ex.: "iffy", "total"), vence o identificador pelo casamento mais longo */
+"if" {
+    total_de_tokens++;
+    printf("IF ");
+}
+
+"else" {
+    total_de_tokens++;
+    printf("ELSE ");
+}
+
+"route" {
+    total_de_tokens++;
+    printf("ROUTE ");
+}
+
+"to" {
+    total_de_tokens++;
+    printf("TO ");
+}
+
+"fall" {
+    total_de_tokens++;
+    printf("FALL ");
 }
 
     /* Segundo: identificadores */
@@ -140,16 +172,143 @@ static void imprimir_tabela_de_simbolos(void)
     printf("ID(%s) ", yytext);
 }
 
+    /* Terceiro: literais numericos. O ponto e escapado (\.) pois sozinho casaria qualquer caractere.
+     * Em "3.5" as duas regras casam, mas o float vence por ser o casamento mais longo. Um numero
+     * colado em letras (ex.: "2contador") vira LITERAL_INT seguido de ID; o erro fica para o parser */
+[0-9]+\.[0-9]+ {
+    total_de_tokens++;
+    printf("LITERAL_FLOAT(%s) ", yytext);
+}
+
+[0-9]+ {
+    total_de_tokens++;
+    printf("LITERAL_INT(%s) ", yytext);
+}
+
+    /* Quarto: literais string. Sao tres regras para o mesmo inicio (aspas):
+     * 1. a string valida, exatamente como na gramatica;
+     * 2. uma string fechada, mas com escape invalido (ex.: \x) ou caractere fora do ASCII imprimivel
+     *    (ex.: tab, acento). Uma string valida casa as regras 1 e 2 com o mesmo tamanho, e vence
+     *    a 1 por aparecer primeiro;
+     * 3. uma string nao terminada (a linha ou o arquivo acaba antes das aspas de fechamento). Ela
+     *    casa sempre 1 caractere a menos que as regras 1 e 2, entao so vence quando as aspas faltam.
+     * Nos erros a string inteira e reportada de uma vez, para nao gerar um erro por caractere.
+     * O \r fica de fora para que o CR de arquivos CRLF nao entre no texto do erro */
+\"({caractere_string}|{escape_string})*\" {
+    total_de_tokens++;
+    printf("LITERAL_STRING(%s) ", yytext);
+}
+
+\"([^"\\\n\r]|\\[^\n\r])*\" {
+    total_de_erros++;
+    printf("STRING INVALIDA(%s) na linha %d ", yytext, yylineno);
+}
+
+\"([^"\\\n\r]|\\[^\n\r])*\\? {
+    total_de_erros++;
+    printf("STRING NAO TERMINADA(%s) na linha %d ", yytext, yylineno);
+}
+
+    /* Quinto: pontuacao e operadores. Os pares que compartilham prefixo ("<" e "<=", ">" e ">=",
+     * "=" e "==", "-" e "->") sao resolvidos pelo casamento mais longo, independente da ordem das regras */
 "," {
     total_de_tokens++;
-    printf("VIRG ");
+    printf("VIRGULA ");
 }
 
 ";" {
     total_de_tokens++;
     ultimo_tipo_visto.clear(); // o lexer guarda aqui um estado que seria do parser, so para
                                // conseguir preencher o tipo na tabela e deixar mais legivel
-    printf("PONTOVIRG ");
+    printf("PONTO_VIRGULA ");
+}
+
+":" {
+    total_de_tokens++;
+    printf("DOIS_PONTOS ");
+}
+
+"=" {
+    total_de_tokens++;
+    ultimo_tipo_visto.clear(); // depois do "=" de uma declaracao os IDs sao usos, nao declaracoes
+    printf("ATRIBUICAO ");
+}
+
+"->" {
+    total_de_tokens++;
+    printf("SETA ");
+}
+
+"(" {
+    total_de_tokens++;
+    printf("ABRE_PARENTESES ");
+}
+
+")" {
+    total_de_tokens++;
+    printf("FECHA_PARENTESES ");
+}
+
+"{" {
+    total_de_tokens++;
+    printf("ABRE_CHAVES ");
+}
+
+"}" {
+    total_de_tokens++;
+    printf("FECHA_CHAVES ");
+}
+
+    /* Operadores aritmeticos */
+"+" {
+    total_de_tokens++;
+    printf("MAIS ");
+}
+
+"-" {
+    total_de_tokens++;
+    printf("MENOS ");
+}
+
+"*" {
+    total_de_tokens++;
+    printf("VEZES ");
+}
+
+"/" {
+    total_de_tokens++;
+    printf("DIVIDIDO ");
+}
+
+    /* Operadores relacionais, um token para cada (cada um pode ter precedencia propria no parser) */
+"<" {
+    total_de_tokens++;
+    printf("MENOR ");
+}
+
+"<=" {
+    total_de_tokens++;
+    printf("MENOR_IGUAL ");
+}
+
+">" {
+    total_de_tokens++;
+    printf("MAIOR ");
+}
+
+">=" {
+    total_de_tokens++;
+    printf("MAIOR_IGUAL ");
+}
+
+"==" {
+    total_de_tokens++;
+    printf("IGUAL ");
+}
+
+"!=" {
+    total_de_tokens++;
+    printf("DIFERENTE ");
 }
 
     /* A quebra de linha e descartada como token, mas é verificada separadamente do \t\r

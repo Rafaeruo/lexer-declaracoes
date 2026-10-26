@@ -1,0 +1,4 @@
+float a = 3.;
+float b = .5;
+float c = 1.2.3;
+float d = 1..2;

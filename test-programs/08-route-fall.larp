@@ -1,0 +1,13 @@
+int opcao, limite = 2, 10;
+string nome = "b";
+route opcao to {
+    1: { fall; }
+    2: { opcao = opcao + 1; }
+    limite: { fall; }
+} else {
+    opcao = 0;
+}
+route nome to {
+    "a": { nome = "A"; }
+    "b": { fall; }
+}

@@ -4,4 +4,4 @@ int
 
 		float    x	,y;
 
-char ultimo;
+string ultimo;

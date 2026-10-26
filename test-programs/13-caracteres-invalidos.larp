@@ -1,4 +1,8 @@
 float pi@;
 int cust$o;
-char #nome;
+string #nome;
 int a & b;
+if (a > 0 && b > 0) { }
+if (a > 0 || b > 0) { }
+if (!a) { }
+string c = 'c';

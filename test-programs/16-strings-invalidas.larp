@@ -1,0 +1,7 @@
+string a = "escape \x invalido";
+string b = "tab	real";
+string c = "acentuação";
+string d = "nao terminada;
+string e = "termina em barra\
+int f;
+string g = "aberta no fim do arquivo

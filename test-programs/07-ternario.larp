@@ -1,0 +1,4 @@
+int a, b = 1, 2;
+int maior = if (a > b) -> a else -> b;
+maior = if (a == b) -> 0 else -> if (a < b) -> b else -> a;
+string msg = if (a != b) -> int d = a - b; d = d * 2; "diferentes" else -> "iguais";

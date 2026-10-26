@@ -1,0 +1,6 @@
+float x = 3.5;
+int n = 10;
+int a, b, c = 1, 2, 3;
+string nome = "mundo";
+float media = (a + b) / 2.0;
+int d = a;

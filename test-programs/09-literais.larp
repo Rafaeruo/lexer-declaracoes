@@ -1,0 +1,5 @@
+int zero, um, grande, zeros = 0, 1, 2147483647, 007;
+float pi, meio, redondo = 3.14159, 0.5, 100.000;
+string vazia, simples = "", "texto com espacos";
+string escapes = "aspas \" barra \\ quebra \n tab \t";
+string simbolos = "!#$%&'()*+,-./:;<=>?@[]^_`{|}~";
